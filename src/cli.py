@@ -580,6 +580,64 @@ def _validate_mode_components(
     return errors, warnings
 
 
+def _check_component_exists(
+    component_type: str, component_name: str, component_category: str
+) -> bool:
+    """
+    Generic function to check if a component exists in the codebase.
+
+    Supports two checking modes:
+    1. For actions: checks for interface.py file existence
+    2. For other components: searches for class definition in plugin files
+
+    Parameters
+    ----------
+    component_type : str
+        Type of component ("input", "llm", "simulator", "background", "action")
+    component_name : str
+        Name of the component to check
+    component_category : str
+        Category name used for directory structure (e.g., "inputs", "llm", "actions")
+
+    Returns
+    -------
+    bool
+        True if component exists, False otherwise
+    """
+    src_dir = os.path.dirname(__file__)
+
+    # Special handling for actions - check for interface.py file
+    if component_type == "action":
+        interface_file = os.path.join(
+            src_dir, component_category, component_name, "interface.py"
+        )
+        return os.path.exists(interface_file)
+
+    # For other components, search for class definition in plugin files
+    plugins_dir = os.path.join(src_dir, component_category, "plugins")
+
+    if not os.path.exists(plugins_dir):
+        return False
+
+    # Search for class definition in all .py files
+    class_pattern = re.compile(
+        rf"^class\s+{re.escape(component_name)}\s*\(", re.MULTILINE
+    )
+
+    for filename in os.listdir(plugins_dir):
+        if filename.endswith(".py") and filename != "__init__.py":
+            filepath = os.path.join(plugins_dir, filename)
+            try:
+                with open(filepath, "r", encoding="utf-8") as f:
+                    content = f.read()
+                    if class_pattern.search(content):
+                        return True
+            except Exception:
+                continue
+
+    return False
+
+
 def _check_input_exists(input_type: str) -> bool:
     """
     Check if input type exists by searching for class definition in plugin files.
@@ -594,27 +652,7 @@ def _check_input_exists(input_type: str) -> bool:
     bool
         True if input type exists, False otherwise
     """
-    src_dir = os.path.dirname(__file__)
-    plugins_dir = os.path.join(src_dir, "inputs", "plugins")
-
-    if not os.path.exists(plugins_dir):
-        return False
-
-    # Search for class definition in all .py files
-    class_pattern = re.compile(rf"^class\s+{re.escape(input_type)}\s*\(", re.MULTILINE)
-
-    for filename in os.listdir(plugins_dir):
-        if filename.endswith(".py") and filename != "__init__.py":
-            filepath = os.path.join(plugins_dir, filename)
-            try:
-                with open(filepath, "r", encoding="utf-8") as f:
-                    content = f.read()
-                    if class_pattern.search(content):
-                        return True
-            except Exception:
-                continue
-
-    return False
+    return _check_component_exists("input", input_type, "inputs")
 
 
 def _check_llm_exists(llm_type: str) -> bool:
@@ -631,27 +669,7 @@ def _check_llm_exists(llm_type: str) -> bool:
     bool
         True if LLM type exists, False otherwise
     """
-    src_dir = os.path.dirname(__file__)
-    plugins_dir = os.path.join(src_dir, "llm", "plugins")
-
-    if not os.path.exists(plugins_dir):
-        return False
-
-    # Search for class definition in all .py files
-    class_pattern = re.compile(rf"^class\s+{re.escape(llm_type)}\s*\(", re.MULTILINE)
-
-    for filename in os.listdir(plugins_dir):
-        if filename.endswith(".py") and filename != "__init__.py":
-            filepath = os.path.join(plugins_dir, filename)
-            try:
-                with open(filepath, "r", encoding="utf-8") as f:
-                    content = f.read()
-                    if class_pattern.search(content):
-                        return True
-            except Exception:
-                continue
-
-    return False
+    return _check_component_exists("llm", llm_type, "llm")
 
 
 def _check_simulator_exists(sim_type: str) -> bool:
@@ -668,27 +686,7 @@ def _check_simulator_exists(sim_type: str) -> bool:
     bool
         True if simulator type exists, False otherwise
     """
-    src_dir = os.path.dirname(__file__)
-    plugins_dir = os.path.join(src_dir, "simulators", "plugins")
-
-    if not os.path.exists(plugins_dir):
-        return False
-
-    # Search for class definition in all .py files
-    class_pattern = re.compile(rf"^class\s+{re.escape(sim_type)}\s*\(", re.MULTILINE)
-
-    for filename in os.listdir(plugins_dir):
-        if filename.endswith(".py") and filename != "__init__.py":
-            filepath = os.path.join(plugins_dir, filename)
-            try:
-                with open(filepath, "r", encoding="utf-8") as f:
-                    content = f.read()
-                    if class_pattern.search(content):
-                        return True
-            except Exception:
-                continue
-
-    return False
+    return _check_component_exists("simulator", sim_type, "simulators")
 
 
 def _check_action_exists(action_name: str) -> bool:
@@ -705,9 +703,7 @@ def _check_action_exists(action_name: str) -> bool:
     bool
         True if action exists, False otherwise
     """
-    src_dir = os.path.dirname(__file__)
-    interface_file = os.path.join(src_dir, "actions", action_name, "interface.py")
-    return os.path.exists(interface_file)
+    return _check_component_exists("action", action_name, "actions")
 
 
 def _check_background_exists(bg_type: str) -> bool:
@@ -724,27 +720,7 @@ def _check_background_exists(bg_type: str) -> bool:
     bool
         True if background type exists, False otherwise
     """
-    src_dir = os.path.dirname(__file__)
-    plugins_dir = os.path.join(src_dir, "backgrounds", "plugins")
-
-    if not os.path.exists(plugins_dir):
-        return False
-
-    # Search for class definition in all .py files
-    class_pattern = re.compile(rf"^class\s+{re.escape(bg_type)}\s*\(", re.MULTILINE)
-
-    for filename in os.listdir(plugins_dir):
-        if filename.endswith(".py") and filename != "__init__.py":
-            filepath = os.path.join(plugins_dir, filename)
-            try:
-                with open(filepath, "r", encoding="utf-8") as f:
-                    content = f.read()
-                    if class_pattern.search(content):
-                        return True
-            except Exception:
-                continue
-
-    return False
+    return _check_component_exists("background", bg_type, "backgrounds")
 
 
 def _check_api_key(raw_config: dict, verbose: bool):
