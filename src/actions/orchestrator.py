@@ -252,6 +252,15 @@ class ActionOrchestrator:
 
         return result
 
+    # Action shortcuts mapping: shortcut -> (type, value)
+    _ACTION_SHORTCUTS = {
+        "stand still": ("move", "stand still"),
+        "turn left": ("move", "turn left"),
+        "turn right": ("move", "turn right"),
+        "move forwards": ("move", "move forwards"),
+        "move back": ("move", "move back"),
+    }
+
     def _normalize_action(self, action: Action) -> Action:
         """
         Normalize action shortcuts to their full form.
@@ -268,21 +277,11 @@ class ActionOrchestrator:
         """
         at = action.type.lower()
         av = action.value
-        if at == "stand still" and av == "":
-            action.type = "move"
-            action.value = "stand still"
-        elif at == "turn left" and av == "":
-            action.type = "move"
-            action.value = "turn left"
-        elif at == "turn right" and av == "":
-            action.type = "move"
-            action.value = "turn right"
-        elif at == "move forwards" and av == "":
-            action.type = "move"
-            action.value = "move forwards"
-        elif at == "move back" and av == "":
-            action.type = "move"
-            action.value = "move back"
+
+        # Check if this is a shortcut that needs normalization
+        if av == "" and at in self._ACTION_SHORTCUTS:
+            action.type, action.value = self._ACTION_SHORTCUTS[at]
+
         return action
 
     def _get_agent_action(self, action: Action) -> T.Optional[AgentAction]:
